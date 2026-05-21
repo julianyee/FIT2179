@@ -1,0 +1,353 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Malaysia’s Main Entry States for Foreign Arrivals",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 430,
+
+  "data": {
+    "url": "data/arrivals_soe.csv"
+  },
+
+  "params": [
+    {
+      "name": "selectedYear",
+      "value": "2024",
+      "bind": {
+        "input": "select",
+        "name": "Select year: ",
+        "options": ["2020", "2021", "2022", "2023", "2024"]
+      }
+    }
+  ],
+
+  "transform": [
+    {
+      "filter": "datum.country != 'ALL'"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "filter": "datum.year_label == selectedYear"
+    },
+    {
+      "calculate": "datum.soe == 'W.P. Labuan' ? 'Federal Territory of Labuan' : datum.soe",
+      "as": "state_of_entry"
+    },
+    {
+      "aggregate": [
+        {
+          "op": "sum",
+          "field": "arrivals",
+          "as": "yearly_state_arrivals"
+        },
+        {
+          "op": "distinct",
+          "field": "date",
+          "as": "months_available"
+        }
+      ],
+      "groupby": ["state_of_entry"]
+    },
+    {
+      "calculate": "datum.yearly_state_arrivals / datum.months_available",
+      "as": "average_monthly_arrivals"
+    },
+    {
+      "calculate": "datum.average_monthly_arrivals / 1000000",
+      "as": "average_monthly_arrivals_million"
+    },
+    {
+      "calculate": "datum.average_monthly_arrivals_million >= 1 ? format(datum.average_monthly_arrivals_million, '.2f') + 'M' : format(datum.average_monthly_arrivals_million, '.3f') + 'M'",
+      "as": "arrival_label"
+    },
+    {
+      "window": [
+        {
+          "op": "rank",
+          "as": "state_rank"
+        }
+      ],
+      "sort": [
+        {
+          "field": "average_monthly_arrivals",
+          "order": "descending"
+        }
+      ]
+    },
+    {
+      "calculate": "datum.state_of_entry + ' is the strongest entry gateway in ' + selectedYear",
+      "as": "top_state_annotation"
+    }
+  ],
+
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "height": 3,
+        "color": "#b8b8b8"
+      },
+      "encoding": {
+        "x": {
+          "field": "average_monthly_arrivals_million",
+          "type": "quantitative",
+          "title": "Average monthly arrivals (Million)",
+          "axis": {
+            "format": ".1f",
+            "grid": true
+          }
+        },
+        "x2": {
+          "datum": 0
+        },
+        "y": {
+          "field": "state_of_entry",
+          "type": "nominal",
+          "title": "State of entry",
+          "sort": {
+            "field": "average_monthly_arrivals",
+            "op": "max",
+            "order": "descending"
+          },
+          "axis": {
+            "grid": false
+          }
+        }
+      }
+    },
+
+    {
+      "transform": [
+        {
+          "filter": "datum.state_rank != 1"
+        }
+      ],
+      "mark": {
+        "type": "circle",
+        "filled": true,
+        "size": 120,
+        "color": "#E69F00",
+        "opacity": 0.95
+      },
+      "encoding": {
+        "x": {
+          "field": "average_monthly_arrivals_million",
+          "type": "quantitative",
+          "title": "Average monthly arrivals (Million)",
+          "axis": {
+            "format": ".1f",
+            "grid": true
+          }
+        },
+        "y": {
+          "field": "state_of_entry",
+          "type": "nominal",
+          "title": "State of entry",
+          "sort": {
+            "field": "average_monthly_arrivals",
+            "op": "max",
+            "order": "descending"
+          }
+        },
+        "tooltip": [
+          {
+            "field": "state_of_entry",
+            "type": "nominal",
+            "title": "State of entry"
+          },
+          {
+            "field": "average_monthly_arrivals_million",
+            "type": "quantitative",
+            "title": "Average monthly arrivals (Million)",
+            "format": ".3f"
+          },
+          {
+            "field": "average_monthly_arrivals",
+            "type": "quantitative",
+            "title": "Average monthly arrivals",
+            "format": ",.0f"
+          },
+          {
+            "field": "yearly_state_arrivals",
+            "type": "quantitative",
+            "title": "Total yearly arrivals",
+            "format": ","
+          },
+          {
+            "field": "months_available",
+            "type": "quantitative",
+            "title": "Months available"
+          }
+        ]
+      }
+    },
+
+    {
+      "transform": [
+        {
+          "filter": "datum.state_rank == 1"
+        }
+      ],
+      "mark": {
+        "type": "circle",
+        "filled": true,
+        "size": 170,
+        "color": "#D55E00",
+        "opacity": 1
+      },
+      "encoding": {
+        "x": {
+          "field": "average_monthly_arrivals_million",
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "state_of_entry",
+          "type": "nominal",
+          "sort": {
+            "field": "average_monthly_arrivals",
+            "op": "max",
+            "order": "descending"
+          }
+        },
+        "tooltip": [
+          {
+            "field": "state_of_entry",
+            "type": "nominal",
+            "title": "State of entry"
+          },
+          {
+            "field": "average_monthly_arrivals_million",
+            "type": "quantitative",
+            "title": "Average monthly arrivals (Million)",
+            "format": ".3f"
+          },
+          {
+            "field": "average_monthly_arrivals",
+            "type": "quantitative",
+            "title": "Average monthly arrivals",
+            "format": ",.0f"
+          },
+          {
+            "field": "yearly_state_arrivals",
+            "type": "quantitative",
+            "title": "Total yearly arrivals",
+            "format": ","
+          },
+          {
+            "field": "months_available",
+            "type": "quantitative",
+            "title": "Months available"
+          }
+        ]
+      }
+    },
+
+    {
+      "mark": {
+        "type": "text",
+        "align": "left",
+        "baseline": "middle",
+        "dx": 8,
+        "font": "Arial",
+        "fontSize": 12,
+        "color": "#444444"
+      },
+      "encoding": {
+        "x": {
+          "field": "average_monthly_arrivals_million",
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "state_of_entry",
+          "type": "nominal",
+          "sort": {
+            "field": "average_monthly_arrivals",
+            "op": "max",
+            "order": "descending"
+          }
+        },
+        "text": {
+          "field": "arrival_label",
+          "type": "nominal"
+        }
+      }
+    },
+
+    {
+      "transform": [
+        {
+          "filter": "datum.state_rank == 1"
+        }
+      ],
+      "mark": {
+        "type": "text",
+        "align": "left",
+        "baseline": "middle",
+        "dx": -315,
+        "dy": -18,
+        "font": "Arial",
+        "fontSize": 12,
+        "fontWeight": "bold",
+        "color": "#D55E00"
+      },
+      "encoding": {
+        "x": {
+          "field": "average_monthly_arrivals_million",
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "state_of_entry",
+          "type": "nominal",
+          "sort": {
+            "field": "average_monthly_arrivals",
+            "op": "max",
+            "order": "descending"
+          }
+        },
+        "text": {
+          "field": "top_state_annotation",
+          "type": "nominal"
+        }
+      }
+    }
+  ],
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

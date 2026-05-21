@@ -1,0 +1,243 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Male and Female Arrival Share by Origin Country",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 800,
+  "height": 430,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "params": [
+    {
+      "name": "selectedYear",
+      "value": "2024",
+      "bind": {
+        "input": "select",
+        "name": "Select year: ",
+        "options": ["2020", "2021", "2022", "2023", "2024"]
+      }
+    }
+  ],
+
+  "transform": [
+    {
+      "filter": "datum.country != 'ALL' && datum.country != 'XXX' && datum.country != 'ATA'"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "filter": "datum.year_label == selectedYear"
+    },
+    {
+      "calculate": "{'SGP':'Singapore','IDN':'Indonesia','THA':'Thailand','CHN':'China','BRN':'Brunei Darussalam','IND':'India','PHL':'Philippines','BGD':'Bangladesh','KOR':'South Korea','AUS':'Australia','VNM':'Vietnam','GBR':'United Kingdom','JPN':'Japan','TWN':'Taiwan','USA':'United States','MMR':'Myanmar','PAK':'Pakistan','NPL':'Nepal','LKA':'Sri Lanka','HKG':'Hong Kong','MAC':'Macau','DEU':'Germany','FRA':'France','CAN':'Canada','NZL':'New Zealand','LAO':'Laos','KHM':'Cambodia','SAU':'Saudi Arabia','ARE':'United Arab Emirates'}[datum.country] || datum.country",
+      "as": "country_name"
+    },
+    {
+      "aggregate": [
+        {
+          "op": "sum",
+          "field": "arrivals",
+          "as": "total_arrivals"
+        },
+        {
+          "op": "sum",
+          "field": "arrivals_male",
+          "as": "male_arrivals"
+        },
+        {
+          "op": "sum",
+          "field": "arrivals_female",
+          "as": "female_arrivals"
+        }
+      ],
+      "groupby": ["country", "country_name"]
+    },
+    {
+      "window": [
+        {
+          "op": "dense_rank",
+          "as": "country_rank"
+        }
+      ],
+      "sort": [
+        {
+          "field": "total_arrivals",
+          "order": "descending"
+        }
+      ]
+    },
+    {
+      "filter": "datum.country_rank <= 10"
+    },
+    {
+      "calculate": "datum.male_arrivals / (datum.male_arrivals + datum.female_arrivals)",
+      "as": "male_share"
+    },
+    {
+      "calculate": "datum.female_arrivals / (datum.male_arrivals + datum.female_arrivals)",
+      "as": "female_share"
+    },
+    {
+      "fold": ["male_share", "female_share"],
+      "as": ["gender", "share"]
+    },
+    {
+      "calculate": "datum.gender == 'male_share' ? 'Male arrivals' : 'Female arrivals'",
+      "as": "gender_label"
+    },
+    {
+      "calculate": "datum.gender == 'female_share' ? -datum.share : datum.share",
+      "as": "diverging_share"
+    },
+    {
+      "calculate": "datum.gender == 'male_share' ? datum.male_arrivals : datum.female_arrivals",
+      "as": "gender_arrivals"
+    },
+    {
+      "calculate": "format(datum.share, '.1%')",
+      "as": "share_label"
+    }
+  ],
+
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusEnd": 3
+      },
+      "encoding": {
+        "x": {
+          "field": "diverging_share",
+          "type": "quantitative",
+          "title": "Share of arrivals",
+          "scale": {
+            "domain": [-1, 1]
+          },
+          "axis": {
+            "format": ".0%",
+            "labelExpr": "datum.value < 0 ? format(abs(datum.value), '.0%') : format(datum.value, '.0%')",
+            "grid": true
+          }
+        },
+        "y": {
+          "field": "country_name",
+          "type": "nominal",
+          "title": "Origin country",
+          "sort": {
+            "field": "total_arrivals",
+            "op": "max",
+            "order": "descending"
+          },
+          "axis": {
+            "grid": false
+          }
+        },
+        "color": {
+          "field": "gender_label",
+          "type": "nominal",
+          "title": "Arrival group",
+          "scale": {
+            "domain": ["Female arrivals", "Male arrivals"],
+            "range": ["#CC79A7", "#0072B2"]
+          },
+          "legend": {
+            "orient": "right",
+            "title": "Arrival group",
+            "symbolSize": 180,
+            "symbolStrokeWidth": 4
+          }
+        },
+        "tooltip": [
+          {
+            "field": "country_name",
+            "type": "nominal",
+            "title": "Origin country"
+          },
+          {
+            "field": "gender_label",
+            "type": "nominal",
+            "title": "Arrival group"
+          },
+          {
+            "field": "share",
+            "type": "quantitative",
+            "title": "Share of arrivals",
+            "format": ".1%"
+          },
+          {
+            "field": "gender_arrivals",
+            "type": "quantitative",
+            "title": "Arrivals",
+            "format": ","
+          },
+          {
+            "field": "total_arrivals",
+            "type": "quantitative",
+            "title": "Total arrivals",
+            "format": ","
+          }
+        ]
+      }
+    },
+
+    {
+      "mark": {
+        "type": "rule",
+        "color": "#444444",
+        "strokeWidth": 1
+      },
+      "encoding": {
+        "x": {
+          "datum": 0
+        }
+      }
+    }
+  ],
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}
