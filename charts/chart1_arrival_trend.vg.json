@@ -1,0 +1,147 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Monthly Foreign Arrivals 2020-2024",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "subtitleFont": "Arial",
+    "subtitleFontSize": 13,
+    "subtitleColor": "#666666",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 360,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "params": [
+    {
+      "name": "selectedYear",
+      "value": "All",
+      "bind": {
+        "input": "select",
+        "name": "Select year: ",
+        "options": ["All", "2020", "2021", "2022", "2023", "2024"]
+      }
+    }
+  ],
+
+  "transform": [
+    {
+      "filter": "datum.country == 'ALL'"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "filter": "selectedYear == 'All' || datum.year_label == selectedYear"
+    }
+  ],
+
+  "mark": {
+    "type": "line",
+    "point": {
+      "filled": true,
+      "size": 55
+    },
+    "strokeWidth": 3,
+    "interpolate": "monotone",
+    "color": "#2f5d62"
+  },
+
+  "encoding": {
+      "x": {
+        "field": "date_parsed",
+        "type": "temporal",
+        "title": "Date",
+        "scale": {
+          "domainMin": {
+            "expr": "selectedYear == 'All' ? datetime(2019, 11, 1) : datetime(toNumber(selectedYear) - 1, 11, 1)"
+          }
+        },
+        "axis": {
+          "format": "%B %Y",
+          "labelAngle": -45,
+          "grid": false,
+          "tickCount": {
+            "interval": "month",
+            "step": 1
+          },
+          "labelOverlap": false,
+          "labelExpr": "selectedYear == 'All' ? (month(datum.value) == 0 ? timeFormat(datum.value, '%B %Y') : '') : (year(datum.value) == toNumber(selectedYear) ? timeFormat(datum.value, '%B') : '')"
+        }
+    },
+
+    "y": {
+      "field": "arrivals",
+      "type": "quantitative",
+      "title": "Monthly foreign arrivals",
+      "axis": {
+        "format": "~s",
+        "grid": true
+      }
+    },
+
+    "tooltip": [
+      {
+        "field": "date_parsed",
+        "type": "temporal",
+        "title": "Month",
+        "format": "%B %Y"
+      },
+      {
+        "field": "arrivals",
+        "type": "quantitative",
+        "title": "Total arrivals",
+        "format": ","
+      },
+      {
+        "field": "arrivals_male",
+        "type": "quantitative",
+        "title": "Male arrivals",
+        "format": ","
+      },
+      {
+        "field": "arrivals_female",
+        "type": "quantitative",
+        "title": "Female arrivals",
+        "format": ","
+      }
+    ]
+  },
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

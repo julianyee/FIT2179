@@ -1,0 +1,211 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Visitor Arrivals Relative to Origin Country Population",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 1000,
+  "height": 560,
+
+  "params": [
+    {
+      "name": "selectedYear",
+      "value": "2024",
+      "bind": {
+        "input": "select",
+        "name": "Select year: ",
+        "options": ["2020", "2021", "2022", "2023", "2024"]
+      }
+    }
+  ],
+
+  "projection": {
+    "type": "equalEarth"
+  },
+
+  "layer": [
+    {
+      "data": {
+        "url": "data/world_countries.geojson",
+        "format": {
+          "property": "features"
+        }
+      },
+      "mark": {
+        "type": "geoshape",
+        "fill": "#eeeeee",
+        "stroke": "#ffffff",
+        "strokeWidth": 0.5
+      }
+    },
+
+    {
+      "data": {
+        "url": "data/arrivals.csv"
+      },
+
+      "transform": [
+        {
+          "filter": "datum.country != 'ALL' && datum.country != 'ATA'"
+        },
+        {
+          "calculate": "{'SGP':'Singapore','IDN':'Indonesia','THA':'Thailand','CHN':'China','BRN':'Brunei Darussalam','IND':'India','PHL':'Philippines','BGD':'Bangladesh','KOR':'South Korea','AUS':'Australia','VNM':'Vietnam','GBR':'United Kingdom','JPN':'Japan','TWN':'Taiwan','USA':'United States','MMR':'Myanmar','PAK':'Pakistan','NPL':'Nepal','LKA':'Sri Lanka','HKG':'Hong Kong','DEU':'Germany','FRA':'France','CAN':'Canada','NZL':'New Zealand','LAO':'Laos','KHM':'Cambodia','SAU':'Saudi Arabia','ARE':'United Arab Emirates'}[datum.country] || datum.country",
+          "as": "country_name"
+        },
+        {
+          "calculate": "toDate(datum.date)",
+          "as": "date_parsed"
+        },
+        {
+          "calculate": "timeFormat(datum.date_parsed, '%Y')",
+          "as": "year_label"
+        },
+        {
+          "filter": "datum.year_label == selectedYear"
+        },
+        {
+          "aggregate": [
+            {
+              "op": "sum",
+              "field": "arrivals",
+              "as": "total_arrivals"
+            }
+          ],
+          "groupby": ["country", "country_name"]
+        },
+        {
+          "lookup": "country",
+          "from": {
+            "data": {
+              "url": "data/country_population_clean.csv"
+            },
+            "key": "country",
+            "fields": [
+              "population_2020",
+              "population_2021",
+              "population_2022",
+              "population_2023",
+              "population_2024"
+            ]
+          }
+        },
+        {
+          "calculate": "selectedYear == '2020' ? datum.population_2020 : selectedYear == '2021' ? datum.population_2021 : selectedYear == '2022' ? datum.population_2022 : selectedYear == '2023' ? datum.population_2023 : datum.population_2024",
+          "as": "selected_population"
+        },
+        {
+          "filter": "isValid(datum.selected_population) && datum.selected_population > 0"
+        },
+        {
+          "calculate": "datum.total_arrivals / datum.selected_population * 100",
+          "as": "arrivals_per_hundred_residents"
+        },
+        {
+          "calculate": "datum.arrivals_per_hundred_residents > 2 ? 2 : datum.arrivals_per_hundred_residents",
+          "as": "capped_arrivals_per_hundred_residents"
+        },
+        {
+          "lookup": "country",
+          "from": {
+            "data": {
+              "url": "data/world_countries.geojson",
+              "format": {
+                "property": "features"
+              }
+            },
+            "key": "properties.iso_a3",
+            "fields": [
+              "geometry",
+              "properties"
+            ]
+          }
+        },
+        {
+          "filter": "datum.geometry != null && isValid(datum.arrivals_per_hundred_residents) && datum.properties.name != 'Antarctica'"
+        }
+      ],
+
+      "mark": {
+        "type": "geoshape",
+        "stroke": "#ffffff",
+        "strokeWidth": 0.6
+      },
+
+      "encoding": {
+        "shape": {
+          "field": "geometry",
+          "type": "geojson"
+        },
+
+        "color": {
+          "field": "capped_arrivals_per_hundred_residents",
+          "type": "quantitative",
+          "title": "Visitor arrivals per one hundred residents",
+          "scale": {
+            "scheme": "reds",
+            "domain": [0, 2]
+          },
+          "legend": {
+            "orient": "bottom",
+            "title": "Visitor arrivals per one hundred residents",
+            "gradientLength": 420,
+            "titleLimit": 500,
+            "labelLimit": 120,
+            "format": ".1f"
+          }
+        },
+
+        "tooltip": [
+          {
+            "field": "country_name",
+            "type": "nominal",
+            "title": "Origin country"
+          },
+          {
+            "field": "total_arrivals",
+            "type": "quantitative",
+            "title": "Total foreign arrivals",
+            "format": ","
+          },
+          {
+            "field": "selected_population",
+            "type": "quantitative",
+            "title": "Origin country population",
+            "format": ","
+          },
+          {
+            "field": "arrivals_per_hundred_residents",
+            "type": "quantitative",
+            "title": "Visitor arrivals per one hundred residents",
+            "format": ".1f"
+          }
+        ]
+      }
+    }
+  ],
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

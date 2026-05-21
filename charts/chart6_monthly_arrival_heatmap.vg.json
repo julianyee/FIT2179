@@ -1,0 +1,157 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Monthly Arrival Patterns by Year",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 300,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "transform": [
+    {
+      "filter": "datum.country == 'ALL'"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "calculate": "month(datum.date_parsed)",
+      "as": "month_number"
+    },
+    {
+      "calculate": "['January','February','March','April','May','June','July','August','September','October','November','December'][datum.month_number]",
+      "as": "month_name"
+    },
+    {
+      "calculate": "datum.arrivals / 1000000",
+      "as": "arrivals_million"
+    }
+  ],
+
+  "mark": {
+    "type": "rect",
+    "stroke": "#ffffff",
+    "strokeWidth": 1
+  },
+
+  "encoding": {
+    "x": {
+      "field": "month_name",
+      "type": "ordinal",
+      "title": "Month",
+      "sort": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ],
+      "axis": {
+        "labelAngle": -45,
+        "grid": false
+      }
+    },
+
+    "y": {
+      "field": "year_label",
+      "type": "ordinal",
+      "title": "Year",
+      "sort": ["2020", "2021", "2022", "2023", "2024"],
+      "axis": {
+        "grid": false
+      }
+    },
+
+    "color": {
+      "field": "arrivals_million",
+      "type": "quantitative",
+      "title": "Arrivals (Million)",
+      "scale": {
+        "scheme": "oranges"
+      },
+      "legend": {
+        "orient": "right",
+        "title": "Arrivals (Million)",
+        "format": ".1f",
+        "gradientLength": 220
+      }
+    },
+
+    "tooltip": [
+      {
+        "field": "month_name",
+        "type": "ordinal",
+        "title": "Month"
+      },
+      {
+        "field": "year_label",
+        "type": "ordinal",
+        "title": "Year"
+      },
+      {
+        "field": "arrivals",
+        "type": "quantitative",
+        "title": "Foreign arrivals",
+        "format": ","
+      },
+      {
+        "field": "arrivals_million",
+        "type": "quantitative",
+        "title": "Foreign arrivals (Million)",
+        "format": ".2f"
+      }
+    ]
+  },
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Top 10 Origin Countries by Average Monthly Arrivals",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 430,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "params": [
+    {
+      "name": "fromYear",
+      "value": "2020",
+      "bind": {
+        "input": "select",
+        "name": "From year: ",
+        "options": ["2020", "2021", "2022", "2023", "2024"]
+      }
+    },
+    {
+      "name": "toYear",
+      "value": "2024",
+      "bind": {
+        "input": "select",
+        "name": "To year: ",
+        "options": ["2020", "2021", "2022", "2023", "2024"]
+      }
+    }
+  ],
+
+  "transform": [
+    {
+      "filter": "datum.country != 'ALL'"
+    },
+    {
+      "calculate": "{'SGP':'Singapore','IDN':'Indonesia','THA':'Thailand','CHN':'China','BRN':'Brunei Darussalam','IND':'India','PHL':'Philippines','BGD':'Bangladesh','KOR':'South Korea','AUS':'Australia','VNM':'Vietnam','GBR':'United Kingdom','JPN':'Japan','TWN':'Taiwan','USA':'United States','MMR':'Myanmar','PAK':'Pakistan','NPL':'Nepal','LKA':'Sri Lanka','HKG':'Hong Kong','DEU':'Germany','FRA':'France','CAN':'Canada','NZL':'New Zealand'}[datum.country] || datum.country",
+      "as": "country_name"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "filter": "datum.year_label == fromYear || datum.year_label == toYear"
+    },
+    {
+      "aggregate": [
+        {
+          "op": "sum",
+          "field": "arrivals",
+          "as": "yearly_total_arrivals"
+        },
+        {
+          "op": "count",
+          "field": "arrivals",
+          "as": "months_available"
+        }
+      ],
+      "groupby": ["country", "country_name", "year_label"]
+    },
+    {
+      "calculate": "datum.yearly_total_arrivals / datum.months_available",
+      "as": "avg_monthly_arrivals"
+    },
+    {
+      "calculate": "datum.avg_monthly_arrivals / 1000000",
+      "as": "avg_monthly_arrivals_million"
+    },
+    {
+      "joinaggregate": [
+        {
+          "op": "sum",
+          "field": "avg_monthly_arrivals",
+          "as": "combined_avg_arrivals"
+        }
+      ],
+      "groupby": ["country", "country_name"]
+    },
+    {
+      "window": [
+        {
+          "op": "dense_rank",
+          "as": "overall_rank"
+        }
+      ],
+      "sort": [
+        {
+          "field": "combined_avg_arrivals",
+          "order": "descending"
+        }
+      ]
+    },
+    {
+      "filter": "datum.overall_rank <= 10"
+    }
+  ],
+
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "stroke": "#b8b8b8",
+        "strokeWidth": 3
+      },
+      "encoding": {
+        "x": {
+          "field": "avg_monthly_arrivals_million",
+          "type": "quantitative",
+          "title": "Average monthly arrivals (Million)",
+          "axis": {
+            "format": ".1f",
+            "grid": true
+          }
+        },
+        "y": {
+          "field": "country_name",
+          "type": "nominal",
+          "title": "Origin country",
+          "sort": {
+            "op": "max",
+            "field": "combined_avg_arrivals",
+            "order": "descending"
+          }
+        },
+        "detail": {
+          "field": "country_name"
+        },
+        "order": {
+          "field": "year_label",
+          "type": "ordinal"
+        }
+      }
+    },
+
+    {
+      "mark": {
+        "type": "point",
+        "filled": true,
+        "size": 125
+      },
+      "encoding": {
+        "x": {
+          "field": "avg_monthly_arrivals_million",
+          "type": "quantitative",
+          "title": "Average monthly arrivals (Million)",
+          "axis": {
+            "format": ".1f",
+            "grid": true
+          }
+        },
+        "y": {
+          "field": "country_name",
+          "type": "nominal",
+          "title": "Origin country",
+          "sort": {
+            "op": "max",
+            "field": "combined_avg_arrivals",
+            "order": "descending"
+          }
+        },
+        "color": {
+          "field": "year_label",
+          "type": "nominal",
+          "title": "Year",
+          "scale": {
+            "range": ["#0072B2", "#E69F00"]
+          },
+          "legend": {
+            "orient": "right",
+            "title": "Year",
+            "symbolSize": 190,
+            "symbolStrokeWidth": 4
+          }
+        },
+        "tooltip": [
+          {
+            "field": "country_name",
+            "type": "nominal",
+            "title": "Country"
+          },
+          {
+            "field": "year_label",
+            "type": "nominal",
+            "title": "Year"
+          },
+          {
+            "field": "avg_monthly_arrivals_million",
+            "type": "quantitative",
+            "title": "Average monthly arrivals (Million)",
+            "format": ".2f"
+          },
+          {
+            "field": "avg_monthly_arrivals",
+            "type": "quantitative",
+            "title": "Average monthly arrivals",
+            "format": ",.0f"
+          },
+          {
+            "field": "yearly_total_arrivals",
+            "type": "quantitative",
+            "title": "Total arrivals",
+            "format": ","
+          },
+          {
+            "field": "months_available",
+            "type": "quantitative",
+            "title": "Months available"
+          }
+        ]
+      }
+    }
+  ],
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

@@ -1,0 +1,215 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Regional Share of Foreign Arrivals by Year",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 430,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "transform": [
+    {
+      "filter": "datum.country != 'ALL' && datum.country != 'XXX' && datum.country != 'ATA' && datum.country != 'BVT' && datum.country != 'HMD' && datum.country != 'SGS'"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "timeFormat(datum.date_parsed, '%Y')",
+      "as": "year_label"
+    },
+    {
+      "lookup": "country",
+      "from": {
+        "data": {
+          "url": "data/world_countries.geojson",
+          "format": {
+            "property": "features"
+          }
+        },
+        "key": "properties.iso_a3",
+        "fields": [
+          "properties"
+        ]
+      }
+    },
+    {
+      "calculate": "datum.country == 'SGP' ? 'Asia' : datum.country == 'HKG' ? 'Asia' : datum.country == 'MAC' ? 'Asia' : datum.country == 'MDV' ? 'Asia' : datum.country == 'BHR' ? 'Asia' : datum.country == 'PSE' ? 'Asia' : datum.country == 'MUS' ? 'Africa' : datum.country == 'SYC' ? 'Africa' : datum.country == 'COM' ? 'Africa' : datum.country == 'CPV' ? 'Africa' : datum.country == 'REU' ? 'Africa' : datum.country == 'MYT' ? 'Africa' : datum.country == 'NOR' ? 'Europe' : datum.country == 'MLT' ? 'Europe' : datum.country == 'AND' ? 'Europe' : datum.country == 'LIE' ? 'Europe' : datum.country == 'MCO' ? 'Europe' : datum.country == 'SMR' ? 'Europe' : datum.country == 'VAT' ? 'Europe' : datum.country == 'GIB' ? 'Europe' : datum.country == 'KNA' ? 'North America' : datum.country == 'DMA' ? 'North America' : datum.country == 'ATG' ? 'North America' : datum.country == 'GRD' ? 'North America' : datum.country == 'LCA' ? 'North America' : datum.country == 'BRB' ? 'North America' : datum.country == 'VCT' ? 'North America' : datum.country == 'AIA' ? 'North America' : datum.country == 'BMU' ? 'North America' : datum.country == 'CYM' ? 'North America' : datum.country == 'GLP' ? 'North America' : datum.country == 'TCA' ? 'North America' : datum.country == 'PRI' ? 'North America' : datum.country == 'TON' ? 'Oceania' : datum.country == 'WSM' ? 'Oceania' : datum.country == 'KIR' ? 'Oceania' : datum.country == 'MHL' ? 'Oceania' : datum.country == 'NRU' ? 'Oceania' : datum.country == 'PLW' ? 'Oceania' : datum.country == 'FSM' ? 'Oceania' : datum.country == 'TUV' ? 'Oceania' : datum.country == 'GUM' ? 'Oceania' : datum.country == 'MNP' ? 'Oceania' : datum.country == 'COK' ? 'Oceania' : datum.country == 'NCL' ? 'Oceania' : datum.properties && datum.properties.continent ? datum.properties.continent : null",
+      "as": "world_region"
+    },
+    {
+      "filter": "datum.world_region != null"
+    },
+    {
+      "calculate": "datum.world_region == 'Asia' ? 1 : datum.world_region == 'Europe' ? 2 : datum.world_region == 'Oceania' ? 3 : datum.world_region == 'North America' ? 4 : datum.world_region == 'Africa' ? 5 : datum.world_region == 'South America' ? 6 : 7",
+      "as": "region_order"
+    },
+    {
+      "aggregate": [
+        {
+          "op": "sum",
+          "field": "arrivals",
+          "as": "yearly_region_arrivals"
+        }
+      ],
+      "groupby": [
+        "year_label",
+        "world_region",
+        "region_order"
+      ]
+    },
+    {
+      "joinaggregate": [
+        {
+          "op": "sum",
+          "field": "yearly_region_arrivals",
+          "as": "yearly_total_arrivals"
+        }
+      ],
+      "groupby": [
+        "year_label"
+      ]
+    },
+    {
+      "calculate": "datum.yearly_region_arrivals / datum.yearly_total_arrivals",
+      "as": "region_share"
+    }
+  ],
+
+  "mark": {
+    "type": "bar",
+    "stroke": "#ffffff",
+    "strokeWidth": 0.8
+  },
+
+  "encoding": {
+    "x": {
+      "field": "year_label",
+      "type": "ordinal",
+      "title": "Year",
+      "axis": {
+        "labelAngle": 0,
+        "grid": false
+      }
+    },
+
+    "y": {
+      "field": "region_share",
+      "type": "quantitative",
+      "title": "Share of foreign arrivals",
+      "stack": "normalize",
+      "axis": {
+        "format": ".0%"
+      }
+    },
+
+    "color": {
+      "field": "world_region",
+      "type": "nominal",
+      "title": "World region",
+      "scale": {
+        "domain": [
+          "Asia",
+          "Europe",
+          "Oceania",
+          "North America",
+          "Africa",
+          "South America"
+        ],
+        "range": [
+          "#E69F00",
+          "#56B4E9",
+          "#999999",
+          "#CC79A7",
+          "#0072B2",
+          "#8B6F47"
+        ]
+      },
+      "legend": {
+        "orient": "right",
+        "title": "World region",
+        "labelLimit": 160,
+        "symbolSize": 180,
+        "symbolStrokeWidth": 4
+      }
+    },
+
+    "order": {
+      "field": "region_order",
+      "type": "quantitative"
+    },
+
+    "tooltip": [
+      {
+        "field": "year_label",
+        "type": "ordinal",
+        "title": "Year"
+      },
+      {
+        "field": "world_region",
+        "type": "nominal",
+        "title": "World region"
+      },
+      {
+        "field": "region_share",
+        "type": "quantitative",
+        "title": "Share of foreign arrivals",
+        "format": ".1%"
+      },
+      {
+        "field": "yearly_region_arrivals",
+        "type": "quantitative",
+        "title": "Foreign arrivals",
+        "format": ","
+      },
+      {
+        "field": "yearly_total_arrivals",
+        "type": "quantitative",
+        "title": "Total yearly arrivals",
+        "format": ","
+      }
+    ]
+  },
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}

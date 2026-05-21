@@ -1,0 +1,282 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+
+  "title": {
+    "text": "Malaysia's Leading Visitor Sources Ranked by Year",
+    "font": "Georgia",
+    "fontSize": 24,
+    "fontWeight": "bold",
+    "anchor": "start",
+    "offset": 12
+  },
+
+  "width": 850,
+  "height": 420,
+
+  "data": {
+    "url": "data/arrivals.csv"
+  },
+
+  "transform": [
+    {
+      "filter": "datum.country != 'ALL'"
+    },
+    {
+      "calculate": "{'SGP':'Singapore','IDN':'Indonesia','THA':'Thailand','CHN':'China','BRN':'Brunei Darussalam','IND':'India','PHL':'Philippines','BGD':'Bangladesh','KOR':'South Korea','AUS':'Australia','VNM':'Vietnam','GBR':'United Kingdom','JPN':'Japan','TWN':'Taiwan','USA':'United States','MMR':'Myanmar','PAK':'Pakistan','NPL':'Nepal','LKA':'Sri Lanka','HKG':'Hong Kong','DEU':'Germany','FRA':'France','CAN':'Canada','NZL':'New Zealand'}[datum.country] || datum.country",
+      "as": "country_name"
+    },
+    {
+      "calculate": "toDate(datum.date)",
+      "as": "date_parsed"
+    },
+    {
+      "calculate": "year(datum.date_parsed)",
+      "as": "year"
+    },
+    {
+      "aggregate": [
+        {
+          "op": "sum",
+          "field": "arrivals",
+          "as": "yearly_arrivals"
+        }
+      ],
+      "groupby": ["country", "country_name", "year"]
+    },
+    {
+      "joinaggregate": [
+        {
+          "op": "sum",
+          "field": "yearly_arrivals",
+          "as": "overall_arrivals"
+        }
+      ],
+      "groupby": ["country", "country_name"]
+    },
+    {
+      "window": [
+        {
+          "op": "dense_rank",
+          "as": "overall_rank"
+        }
+      ],
+      "sort": [
+        {
+          "field": "overall_arrivals",
+          "order": "descending"
+        }
+      ]
+    },
+    {
+      "window": [
+        {
+          "op": "rank",
+          "as": "year_rank"
+        }
+      ],
+      "sort": [
+        {
+          "field": "yearly_arrivals",
+          "order": "descending"
+        }
+      ],
+      "groupby": ["year"]
+    },
+    {
+      "filter": "datum.overall_rank <= 10"
+    }
+  ],
+
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "strokeWidth": 2.8,
+        "point": false,
+        "interpolate": "monotone"
+      },
+      "encoding": {
+        "x": {
+          "field": "year",
+          "type": "ordinal",
+          "title": "Year",
+          "axis": {
+            "labelAngle": 0,
+            "grid": false
+          }
+        },
+        "y": {
+          "field": "year_rank",
+          "type": "quantitative",
+          "title": "Rank by yearly arrivals",
+          "scale": {
+            "reverse": true,
+            "zero": false
+          },
+          "axis": {
+            "tickMinStep": 1
+          }
+        },
+        "color": {
+          "field": "country_name",
+          "type": "nominal",
+          "title": "Origin country",
+          "scale": {
+            "range": [
+              "#0072B2",
+              "#E69F00",
+              "#56B4E9",
+              "#CC79A7",
+              "#F0E442",
+              "#6A3D9A",
+              "#8B6F47",
+              "#999999",
+              "#6666CC",
+              "#A6761D"
+            ]
+          },
+          "legend": {
+            "orient": "right",
+            "title": "Origin country",
+            "labelLimit": 180,
+            "symbolSize": 220,
+            "symbolStrokeWidth": 5
+          }
+        },
+        "order": {
+          "field": "year",
+          "type": "ordinal"
+        },
+        "tooltip": [
+          {
+            "field": "country_name",
+            "type": "nominal",
+            "title": "Country"
+          },
+          {
+            "field": "country",
+            "type": "nominal",
+            "title": "Country code"
+          },
+          {
+            "field": "year",
+            "type": "ordinal",
+            "title": "Year"
+          },
+          {
+            "field": "year_rank",
+            "type": "quantitative",
+            "title": "Rank"
+          },
+          {
+            "field": "yearly_arrivals",
+            "type": "quantitative",
+            "title": "Arrivals",
+            "format": ","
+          }
+        ]
+      }
+    },
+
+    {
+      "mark": {
+        "type": "point",
+        "filled": true,
+        "size": 75
+      },
+      "encoding": {
+        "x": {
+          "field": "year",
+          "type": "ordinal"
+        },
+        "y": {
+          "field": "year_rank",
+          "type": "quantitative",
+          "scale": {
+            "reverse": true,
+            "zero": false
+          }
+        },
+        "color": {
+          "field": "country_name",
+          "type": "nominal",
+          "scale": {
+            "range": [
+              "#0072B2",
+              "#E69F00",
+              "#56B4E9",
+              "#CC79A7",
+              "#F0E442",
+              "#6A3D9A",
+              "#8B6F47",
+              "#999999",
+              "#6666CC",
+              "#A6761D"
+            ]
+          },
+          "legend": null
+        },
+        "tooltip": [
+          {
+            "field": "country_name",
+            "type": "nominal",
+            "title": "Country"
+          },
+          {
+            "field": "country",
+            "type": "nominal",
+            "title": "Country code"
+          },
+          {
+            "field": "year",
+            "type": "ordinal",
+            "title": "Year"
+          },
+          {
+            "field": "year_rank",
+            "type": "quantitative",
+            "title": "Rank"
+          },
+          {
+            "field": "yearly_arrivals",
+            "type": "quantitative",
+            "title": "Arrivals",
+            "format": ","
+          }
+        ]
+      }
+    }
+  ],
+
+  "config": {
+    "background": "#ffffff",
+
+    "view": {
+      "stroke": "transparent"
+    },
+
+    "axis": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "titleColor": "#333333",
+      "labelColor": "#555555",
+      "gridColor": "#e6e6e6",
+      "domainColor": "#cccccc",
+      "tickColor": "#cccccc"
+    },
+
+    "legend": {
+      "labelFont": "Arial",
+      "titleFont": "Arial",
+      "labelFontSize": 12,
+      "titleFontSize": 13,
+      "orient": "right"
+    },
+
+    "text": {
+      "font": "Arial"
+    }
+  }
+}
